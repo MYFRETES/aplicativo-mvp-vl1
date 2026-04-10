@@ -5,4 +5,5 @@ class RouteNames {
   static const register = '/cadastro';
   static const homeCliente = '/home-cliente';
   static const homeMotorista = '/home-motorista';
+  static const novoFrete = '/home-cliente/novo-frete';
 }
