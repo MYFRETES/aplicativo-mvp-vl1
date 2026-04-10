@@ -1,8 +1,7 @@
-# MyFretes — Base Inicial do MVP (v1)
+# MyFretes — MVP v1
 
-> **Este repositório contém a base inicial do MVP do aplicativo MyFretes.**
-> Trata-se do ponto de partida para o desenvolvimento do produto — splash,
-> boas-vindas, login, cadastro, home cliente e home motorista integrados ao Supabase.
+> **Este repositório contém o MVP do aplicativo MyFretes.**
+> Base inicial + formulário de solicitação de frete em etapas para o cliente.
 
 ---
 
@@ -17,9 +16,29 @@ clientes e motoristas.
 | Tela de boas-vindas | ✅ |
 | Cadastro (cliente / motorista) | ✅ |
 | Login com Supabase | ✅ |
-| Home cliente | ✅ base |
+| Home cliente | ✅ |
 | Home motorista | ✅ base |
-| Formulário de frete em etapas | 🔜 próxima sprint |
+| Formulário de frete em etapas | ✅ |
+
+---
+
+## Fluxo do Cliente — Novo Frete
+
+```
+Home Cliente → Novo Frete → [7 etapas] → Confirmar → Supabase
+```
+
+### Etapas do formulário
+
+| # | Etapa | Campos principais |
+|---|---|---|
+| 1 | Dados iniciais | título, descrição, data desejada, período |
+| 2 | Origem | CEP, endereço, número, bairro, cidade, UF, referência |
+| 3 | Paradas | zero ou mais endereços intermediários |
+| 4 | Destino | mesmos campos da origem |
+| 5 | Itens | nome, quantidade, categoria, observação |
+| 6 | Ajudantes | quantidade, montagem/desmontagem, embalagem |
+| 7 | Revisão | resumo completo + confirmar envio |
 
 ---
 
@@ -52,40 +71,56 @@ await Supabase.initialize(
 
 > 💡 Em produção, use variáveis de ambiente ou um arquivo `.env` não versionado.
 
-### 2. Criação automática de `profiles` via Trigger SQL ⭐ (recomendado)
+### 2. Migration: profiles (trigger)
 
-A estratégia preferida para criar registros na tabela `profiles` é um
-**trigger SQL no Supabase**, acionado logo após a inserção em `auth.users`.
-Isso elimina a dependência do cliente para a criação do perfil e torna o
-fluxo muito mais robusto.
+Execute no SQL Editor do Supabase:
 
-**Como configurar:**
+```
+supabase/migrations/20240101000000_create_profiles_trigger.sql
+```
 
-1. Acesse o painel do Supabase → **Database → SQL Editor → New Query**
-2. Cole e execute o conteúdo de
-   [`supabase/migrations/20240101000000_create_profiles_trigger.sql`](supabase/migrations/20240101000000_create_profiles_trigger.sql)
+Cria a tabela `profiles`, a função `handle_new_user()` e o trigger
+`on_auth_user_created` em `auth.users`.
 
-O script cria:
-- A tabela `public.profiles` (com RLS habilitado)
-- A função `handle_new_user()` que preenche o profile com os metadados enviados no `signUp`
-- O trigger `on_auth_user_created` em `auth.users`
+### 3. Migration: fretes ⭐
 
-#### Fallback no cliente
+Execute no SQL Editor do Supabase:
 
-Caso o trigger ainda não esteja configurado, o `AuthService` tenta um
-`upsert` em `profiles` logo após o `signUp`. Essa chamada é silenciosa
-em caso de falha — o trigger é o mecanismo principal.
+```
+supabase/migrations/20260410000001_create_fretes.sql
+```
 
-### 3. Esquema esperado da tabela `profiles`
+Cria as tabelas:
+
+| Tabela | Descrição |
+|---|---|
+| `fretes` | Solicitação principal com dados de origem, destino e ajudantes |
+| `frete_paradas` | Paradas intermediárias vinculadas ao frete |
+| `frete_itens` | Itens de carga vinculados ao frete |
+
+Todas as tabelas têm **RLS habilitado**:
+- O cliente autenticado pode **inserir** e **ler** apenas os próprios dados.
+- As tabelas filhas (`frete_paradas`, `frete_itens`) verificam a posse via
+  `JOIN` com `fretes`, garantindo que o cliente só acesse dados do próprio frete.
+
+#### Esquema de `fretes`
 
 | Coluna | Tipo | Descrição |
 |---|---|---|
-| `id` | `uuid` (PK) | Mesmo ID do `auth.users` |
-| `email` | `text` | E-mail do usuário |
-| `nome_completo` | `text` | Nome informado no cadastro |
-| `telefone` | `text` | Telefone com máscara |
-| `perfil` | `text` | `'cliente'` ou `'motorista'` |
-| `criado_em` | `timestamptz` | Data de criação |
+| `id` | `uuid` (PK) | Gerado automaticamente |
+| `cliente_id` | `uuid` | FK → `auth.users` |
+| `status` | `text` | `aberto` \| `aceito` \| `em_andamento` \| `concluido` \| `cancelado` |
+| `titulo` | `text` | Opcional |
+| `descricao` | `text` | Opcional |
+| `data_desejada` | `date` | Data de coleta desejada |
+| `periodo` | `text` | Opcional (ex.: "manhã") |
+| `origem_*` | vários | Campos do endereço de origem |
+| `destino_*` | vários | Campos do endereço de destino |
+| `qtd_ajudantes` | `int` | Padrão 0 |
+| `precisa_montagem` | `bool` | Padrão false |
+| `precisa_embalagem` | `bool` | Padrão false |
+| `obs_ajudantes` | `text` | Opcional |
+| `criado_em` | `timestamptz` | Preenchido automaticamente |
 
 ---
 
@@ -105,6 +140,11 @@ lib/
   core/
     constants/
       app_strings.dart
+  shared/
+    models/
+      frete_models.dart          ← FreteEnderecoData, FreteItemData
+    services/
+      frete_service.dart         ← persistência no Supabase
   features/
     splash/
       presentation/pages/splash_page.dart
@@ -121,9 +161,16 @@ lib/
         presentation/pages/home_cliente_page.dart
       motorista/
         presentation/pages/home_motorista_page.dart
+    customer/
+      presentation/
+        controllers/
+          novo_frete_controller.dart   ← estado do formulário (ChangeNotifier)
+        pages/
+          novo_frete_page.dart         ← formulário em 7 etapas
 supabase/
   migrations/
     20240101000000_create_profiles_trigger.sql
+    20260410000001_create_fretes.sql
 ```
 
 ---
@@ -134,7 +181,9 @@ supabase/
 # 1. Instale as dependências
 flutter pub get
 
-# 2. Execute o app (com emulador ou dispositivo conectado)
+# 2. Configure o Supabase (veja seção acima)
+
+# 3. Execute o app (com emulador ou dispositivo conectado)
 flutter run
 ```
 
@@ -147,14 +196,16 @@ flutter run
 - [go_router](https://pub.dev/packages/go_router) ^14
 - [Google Fonts — Poppins](https://pub.dev/packages/google_fonts)
 - [mask_text_input_formatter](https://pub.dev/packages/mask_text_input_formatter)
+- [intl](https://pub.dev/packages/intl) ^0.20
 
 ---
 
 ## Próximos Passos
 
-- [ ] Formulário de solicitação de frete em etapas (cliente)
 - [ ] Painel de fretes disponíveis (motorista)
+- [ ] Aceite de frete pelo motorista
 - [ ] Notificações push
+- [ ] Listagem de fretes do cliente
 
 ---
 

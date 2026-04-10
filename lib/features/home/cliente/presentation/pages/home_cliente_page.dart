@@ -52,9 +52,15 @@ class _HomeClienteBody extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Em breve: formulário de solicitação de frete em etapas.',
+              'Solicite um frete de forma rápida e simples.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () => context.push(RouteNames.novoFrete),
+              icon: const Icon(Icons.add_circle_outline),
+              label: const Text('Novo Frete'),
             ),
           ],
         ),
@@ -62,3 +68,4 @@ class _HomeClienteBody extends StatelessWidget {
     );
   }
 }
+

@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/auth/presentation/pages/welcome_page.dart';
+import '../../features/customer/presentation/pages/novo_frete_page.dart';
 import '../../features/home/cliente/presentation/pages/home_cliente_page.dart';
 import '../../features/home/motorista/presentation/pages/home_motorista_page.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
@@ -61,6 +62,10 @@ class AppRouter {
       GoRoute(
         path: RouteNames.homeMotorista,
         builder: (_, __) => const HomeMotoristPage(),
+      ),
+      GoRoute(
+        path: RouteNames.novoFrete,
+        builder: (_, __) => const NovoFretePage(),
       ),
     ],
   );
