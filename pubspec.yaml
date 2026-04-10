@@ -1,0 +1,36 @@
+name: myfretes_app
+description: MyFretes - App MVP para clientes e motoristas de frete.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Navegação
+  go_router: ^13.2.0
+
+  # Fontes
+  google_fonts: ^6.2.1
+
+  # Backend / Auth
+  supabase_flutter: ^2.3.4
+
+  # Formatação de inputs
+  mask_text_input_formatter: ^2.9.0
+
+  # Internacionalização
+  intl: ^0.19.0
+
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
