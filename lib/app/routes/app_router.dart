@@ -24,8 +24,12 @@ class AppRouter {
           state.matchedLocation == RouteNames.splash;
 
       if (isLoggedIn && isOnAuthPage) {
-        // Após login, redireciona conforme perfil (padrão: cliente)
-        return RouteNames.homeCliente;
+        // Redireciona conforme o perfil armazenado nos metadados do usuário.
+        final perfil =
+            _supabase.auth.currentUser?.userMetadata?['perfil'] as String?;
+        return perfil == 'motorista'
+            ? RouteNames.homeMotorista
+            : RouteNames.homeCliente;
       }
       return null;
     },
@@ -41,8 +45,8 @@ class AppRouter {
       GoRoute(
         path: RouteNames.login,
         builder: (context, state) {
-          final successMessage =
-              state.uri.queryParameters['mensagem'];
+          // Recebe mensagem de sucesso passada via `extra` (dado transiente).
+          final successMessage = state.extra as String?;
           return LoginPage(successMessage: successMessage);
         },
       ),

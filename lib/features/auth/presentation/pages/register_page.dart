@@ -57,9 +57,8 @@ class _RegisterPageState extends State<RegisterPage> {
       // Após cadastro bem-sucedido, redireciona para login com mensagem de sucesso.
       // NÃO vai direto para home — evita problemas de confirmação de e-mail
       // ou timing de sessão no Supabase.
-      context.go(
-        '${RouteNames.login}?mensagem=${Uri.encodeComponent(AppStrings.cadastroSucesso)}',
-      );
+      // Usa `extra` para passar dado transiente sem poluir a URL.
+      context.go(RouteNames.login, extra: AppStrings.cadastroSucesso);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

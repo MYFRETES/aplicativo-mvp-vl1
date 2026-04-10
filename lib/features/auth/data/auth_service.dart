@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Serviço de autenticação via Supabase.
@@ -123,8 +124,14 @@ class AuthService {
         'perfil': perfil,
         'email': email,
       });
-    } catch (_) {
-      // Falha silenciosa: o trigger SQL é o mecanismo preferido.
+    } catch (e) {
+      // Falha silenciosa em produção; log em debug para facilitar diagnóstico.
+      // O trigger SQL é o mecanismo preferido — se este fallback falhar,
+      // verificar se o trigger `on_auth_user_created` está configurado.
+      assert(() {
+        debugPrint('[AuthService] Fallback upsert de profile falhou: $e');
+        return true;
+      }());
     }
   }
 
